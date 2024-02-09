@@ -1,39 +1,60 @@
 const express = require("express");
-const { createTodo, updateTodo } = require("./types");
-const { todo } = require("./db");
+const { createTodo, updateTodo } = require("./types.js");
+const { todo } = require("./db.js");
 const app = express();
 const port = 3000;
 
 app.use(express.json());
 
-app.post("/todo", (req, res) => {
-    const createPayload = req.body;
-    const parsedPayload = createTodo.safeParse(createPayload);
-    if(!parsedPayload.success){
-        res.status(401).json({
-            msg: "You sent the wrong inputs"
-        })
-        return;
+app.post("/todo", async (req, res) => {
+  const createPayload = req.body;
+  const parsedPayload = createTodo.safeParse(createPayload);
+  if (!parsedPayload.success) {
+    res.status(401).json({
+      msg: "You sent the wrong inputs",
+    });
+    return;
+  }
+  // put it in the DB
+  await todo.create({
+    title: createPayload.title,
+    description: createPayload.description,
+    completed: false,
+  });
+  res.json({
+    msg: "Todo created sucessfully!",
+  });
+});
+
+app.get("/todos", async (req, res) => {
+  const Todo = await todo.find({});
+  res.json({
+    Todo,
+  });
+});
+
+app.put("/completed", async (req, res) => {
+  const updatePayload = req.body;
+  const parsedPayload = updateTodo.safeParse(updatePayload);
+  if (!parsedPayload.success) {
+    res.status(401).json({
+      msg: "You sent the wrong inputs",
+    });
+    return;
+  }
+  await todo.update(
+    {
+      _id: req.body.id,
+    },
+    {
+      completed: true,
     }
-    // put it in the DB
-
-})
-
-app.get("/todos", (req, res) => {
-
-})
-
-app.put("/completed", (req, res) => {
-    const updatePayload = req.body;
-    const parsedPayload = updateTodo.safeParse(updatePayload);
-    if(!parsedPayload.success){
-        res.status(401).json({
-            msg: "You sent the wrong inputs"
-        })
-        return;
-    }
-})
+  );
+  res.json({
+    msg: "Todo marked as completed!",
+  });
+});
 
 app.listen(port, () => {
-    console.log(`Server is running at ${port}`);
-})
+  console.log(`Server is running at ${port}`);
+});
